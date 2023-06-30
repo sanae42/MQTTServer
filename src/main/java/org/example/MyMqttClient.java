@@ -16,7 +16,6 @@ public class MyMqttClient {
         subTopic("testtopic/1");
         //向主题world发送hello World(客户端)
         publishMessage("testtopic/1","hello World(客户端 )",1);
-
     }
     /**初始化连接*/
     public static void start(String clientId) {
