@@ -15,7 +15,7 @@ public class MyMqttClient {
         //订阅/World这个主题
         subTopic("testtopic/1");
         //向主题world发送hello World(客户端)
-        publishMessage("testtopic/1","hello World(客户端)",1);
+        publishMessage("testtopic/1","hello World(客户端 )",1);
 
     }
     /**初始化连接*/
