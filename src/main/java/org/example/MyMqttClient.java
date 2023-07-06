@@ -13,7 +13,7 @@ public class MyMqttClient {
         //初始化连接
         start(ClientName);
         //订阅/World这个主题
-        subTopic("testtopic/1");
+        subTopic("TrashCan/1");
         //向主题world发送hello World(客户端)
         //
         publishMessage("testtopic/1","hello World(客户端 )",1);
