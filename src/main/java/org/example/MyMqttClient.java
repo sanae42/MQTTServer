@@ -9,15 +9,6 @@ public class MyMqttClient {
     private static MqttConnectOptions mqttConnectOptions = null;
     private static String ClientName = "myMqttClient";
     private static String IP = "47.98.247.122";
-    public static void main(String[] args) {
-        //初始化连接
-        start(ClientName);
-        //订阅/World这个主题
-        subTopic("TrashCan/1");
-        //向主题world发送hello World(客户端)
-        //
-        publishMessage("testtopic/1","hello World(客户端 )",1);
-    }
     /**初始化连接*/
     public static void start(String clientId) {
         //初始化连接设置对象
@@ -98,8 +89,8 @@ public class MyMqttClient {
     /**发布消息*/
     public static void publishMessage(String pubTopic, String message, int qos) {
         if(null != mqttClient&& mqttClient.isConnected()) {
-            System.out.println("发布消息   "+mqttClient.isConnected());
-            System.out.println("id:"+mqttClient.getClientId());
+//            System.out.println("发布消息   "+mqttClient.isConnected());
+//            System.out.println("id:"+mqttClient.getClientId());
             MqttMessage mqttMessage = new MqttMessage();
             mqttMessage.setQos(qos);
             mqttMessage.setPayload(message.getBytes());
@@ -110,7 +101,10 @@ public class MyMqttClient {
                 try {
                     MqttDeliveryToken publish = topic.publish(mqttMessage);
                     if(!publish.isComplete()) {
-                        System.out.println("消息发布成功");
+                        System.out.print("消息发布成功:");
+                        System.out.print("   主题:"+pubTopic);
+                        System.out.print("   qos:"+qos);
+                        System.out.println("   内容:"+message);
                     }
                 } catch (MqttException e) {
                     e.printStackTrace();
@@ -126,6 +120,9 @@ public class MyMqttClient {
         if(null != mqttClient) {
             if(!mqttClient.isConnected()) {
                 if(null != mqttConnectOptions) {
+                    //TODO:重连后不能收到消息，可能需要在重连后重新绑定callback或重新订阅？
+//                    start(ClientName);
+//                    subTopic("TrashCanPub");
                     try {
                         mqttClient.connect(mqttConnectOptions);
                     } catch (MqttException e) {
