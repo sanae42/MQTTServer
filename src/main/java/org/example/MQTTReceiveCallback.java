@@ -47,7 +47,7 @@ public class MQTTReceiveCallback implements MqttCallback {
         }else {
             temperature = -1;
         }
-        // 如果读取类型错位，会重新连接，可用catch捕获错误“JSONObject["Humidity"] is not a number.”
+        // 如果读取类型错位或无相应内容，会重新连接，可用catch捕获错误“JSONObject["Humidity"] is not a number.”
 //        try {
 //            int humidity = jsonObject.getInt("Humidity");
 //        } catch (Exception e) {
