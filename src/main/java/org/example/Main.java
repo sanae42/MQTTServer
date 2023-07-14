@@ -11,14 +11,13 @@ import java.util.TimerTask;
 
 public class Main {
     private static MyMqttClient myMQTTClient;
-    private static String ClientName = "myMqttClient";
-    private static String IP = "47.98.247.122";
     public static void main(String[] args) {
-        myMQTTClient = new MyMqttClient();
+        myMQTTClient = MyMqttClient.getInstance();
         //初始化连接
-        myMQTTClient.start(ClientName);
+        myMQTTClient.start();
         //订阅/World这个主题
         myMQTTClient.subTopic("TrashCanPub");
+        myMQTTClient.publishMessage("testtopic/1","java客户端连接测试",0);
 
         //开启线程定时执行
         RunnableDemo R1 = new RunnableDemo( "Thread-1");
