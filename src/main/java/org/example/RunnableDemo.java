@@ -21,6 +21,8 @@ class RunnableDemo implements Runnable {
             // 定时发送消息测试
 //            int count = 0;
             while(true){
+                //全部垃圾桶状态数据
+                JSONObject allTrashCanData = new JSONObject();
                 JSONArray jsonArray = new JSONArray();
 
                 Database db = new Database();
@@ -43,8 +45,12 @@ class RunnableDemo implements Runnable {
                         jsonArray.add(jsonObject);
                     }
 
+                    allTrashCanData.put("sender","myMqttClient");
+                    allTrashCanData.put("dataType","allTrashCanData");
+                    allTrashCanData.put("payload",jsonArray);
+
                     MyMqttClient myMQTTClient = MyMqttClient.getInstance();
-                    myMQTTClient.publishMessage("testtopic/1",jsonArray.toString(),0);
+                    myMQTTClient.publishMessage("testtopic/1",allTrashCanData.toString(),0);
                 } catch (SQLException e) {
                     e.printStackTrace();
                 }

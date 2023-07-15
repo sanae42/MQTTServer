@@ -6,6 +6,9 @@ import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
 import org.eclipse.paho.client.mqttv3.MqttCallbackExtended;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
 // 继承自MqttCallbackExtended而非MqttCallback，可以重写connectComplete方法。MqttCallbackExtended继承自connectComplete
 public class MQTTReceiveCallback implements MqttCallbackExtended {
     @Override
@@ -52,6 +55,7 @@ public class MQTTReceiveCallback implements MqttCallbackExtended {
 
         // 当JSON转换成功时，继续读取数据并写入数据库
         if(JSON_success){
+            //接收到垃圾桶数据时
             jsonObject = JSONObject.fromObject(new String(message.getPayload()));
             int id = 0;
             if(jsonObject.has("Id")){
@@ -80,9 +84,16 @@ public class MQTTReceiveCallback implements MqttCallbackExtended {
 
             //写入数据库
             if(distance>=0 && humidity>=0 && temperature>=0 && id>0){
+                //更新TrashCan表对应垃圾桶数据
                 Database db = new Database();
-                Object[] obj = {distance, humidity, temperature, id};
-                int i = db.update("UPDATE TrashCan SET Distance=?, Humidity=?, Temperature=? WHERE Id=?", obj);
+                Object[] obj1 = {distance, humidity, temperature, id};
+                int result1 = db.update("UPDATE TrashCan SET Distance=?, Humidity=?, Temperature=? WHERE Id=?", obj1);
+                //插入record表对应垃圾桶数据
+                Date date = new Date(System.currentTimeMillis());
+                SimpleDateFormat formatterDate= new SimpleDateFormat("yyyy-MM-dd");
+                SimpleDateFormat formatterTime= new SimpleDateFormat("HH:mm:ss");
+                Object[] obj2 = {distance, humidity, temperature, formatterDate.format(date), formatterTime.format(date), id};
+                int result2 = db.update("insert into record(Distance,Humidity,Temperature,Date,Time,TrashCanId) values(?,?,?,?,?,?)", obj2);
             }
         }
     }
