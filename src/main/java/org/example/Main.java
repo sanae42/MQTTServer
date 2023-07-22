@@ -1,14 +1,5 @@
 package org.example;
 
-import org.eclipse.paho.client.mqttv3.MqttClient;
-import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
-import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
-
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.Timer;
-import java.util.TimerTask;
-
 public class Main {
     private static MyMqttClient myMQTTClient;
     public static void main(String[] args) {
@@ -17,10 +8,11 @@ public class Main {
         myMQTTClient.start();
         //订阅/World这个主题
         myMQTTClient.subTopic("TrashCanPub");
+        myMQTTClient.subTopic("MQTTServerSub");
         myMQTTClient.publishMessage("testtopic/1","java客户端连接测试",0);
 
         //开启线程定时执行
-        RunnableDemo R1 = new RunnableDemo( "Thread-1");
+        RunnableScheduled R1 = new RunnableScheduled( "Thread-1");
         R1.start();
 
         //测试数据库

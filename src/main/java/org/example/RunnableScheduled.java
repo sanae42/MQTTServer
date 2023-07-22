@@ -5,12 +5,13 @@ import net.sf.json.JSONObject;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Date;
 
-class RunnableDemo implements Runnable {
+class RunnableScheduled implements Runnable {
     private Thread t;
     private String threadName;
 
-    RunnableDemo( String name) {
+    RunnableScheduled(String name) {
         threadName = name;
 //            System.out.println("Creating " +  threadName );
     }
@@ -42,6 +43,12 @@ class RunnableDemo implements Runnable {
                         jsonObject.put("Temperature", set.getInt("Temperature"));
                         jsonObject.put("Latitude", set.getDouble("Latitude"));
                         jsonObject.put("Longitude", set.getDouble("Longitude"));
+
+                        jsonObject.put("Depth",set.getInt("Depth"));
+                        jsonObject.put("LastEmptyTime",(Date)set.getTimestamp("lastEmptyTime"));
+                        jsonObject.put("EstimatedTime",set.getInt("EstimatedTime"));
+                        jsonObject.put("Variance",set.getInt("Variance"));
+
                         jsonArray.add(jsonObject);
                     }
 
@@ -50,7 +57,7 @@ class RunnableDemo implements Runnable {
                     allTrashCanData.put("payload",jsonArray);
 
                     MyMqttClient myMQTTClient = MyMqttClient.getInstance();
-                    myMQTTClient.publishMessage("testtopic/1",allTrashCanData.toString(),0);
+                    myMQTTClient.publishMessage("MQTTServerPub",allTrashCanData.toString(),0);
                 } catch (SQLException e) {
                     e.printStackTrace();
                 }

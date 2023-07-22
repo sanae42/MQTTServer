@@ -1,13 +1,18 @@
 package org.example;
 
+import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 import org.apache.commons.logging.Log;
 import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
 import org.eclipse.paho.client.mqttv3.MqttCallbackExtended;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 // 继承自MqttCallbackExtended而非MqttCallback，可以重写connectComplete方法。MqttCallbackExtended继承自connectComplete
 public class MQTTReceiveCallback implements MqttCallbackExtended {
@@ -65,6 +70,7 @@ public class MQTTReceiveCallback implements MqttCallbackExtended {
 
             //接收到垃圾桶传感器采集数据时
             //不能用null.equal，必须先判断string是否为null，否则进程会结束
+            //TODO:后续可以考虑在子线程里完成以下操作
             if(dataType!=null && dataType.equals("trashCanDataCollect")){
                 int id = 0;
                 if(jsonObject.has("Id")){
@@ -93,21 +99,174 @@ public class MQTTReceiveCallback implements MqttCallbackExtended {
 
                 //写入数据库
                 if(distance>=0 && humidity>=0 && temperature>=0 && id>0){
-                    //更新TrashCan表对应垃圾桶数据
                     Database db = new Database();
-                    Object[] obj1 = {distance, humidity, temperature, id};
-                    int result1 = db.update("UPDATE TrashCan SET Distance=?, Humidity=?, Temperature=? WHERE Id=?", obj1);
-                    //插入record表对应垃圾桶数据
+
+                    //计算是否已满或者已被清空
                     Date date = new Date(System.currentTimeMillis());
-                    SimpleDateFormat formatterDate= new SimpleDateFormat("yyyy-MM-dd");
-                    SimpleDateFormat formatterTime= new SimpleDateFormat("HH:mm:ss");
-                    Object[] obj2 = {distance, humidity, temperature, formatterDate.format(date), formatterTime.format(date), id};
-                    int result2 = db.update("insert into record(Distance,Humidity,Temperature,Date,Time,TrashCanId) values(?,?,?,?,?,?)", obj2);
+                    SimpleDateFormat formatterDateTime= new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+
+                    Object[] obj0 = {id};
+                    ResultSet set = db.select("select * from TrashCan where id = ?", obj0);
+
+                    if(set!=null){
+                        while (set.next()){
+                            int depth = set.getInt("Depth");
+                            int previousDistance = set.getInt("Distance");
+                            Date lastEmptyTime = set.getTimestamp("LastEmptyTime");
+                            int estimatedTime = set.getInt("EstimatedTime");
+
+                            // 如果已经清空且之前未满，需要更新预估数据，更新清空时间
+                            if( judgeIfEmptied(depth, previousDistance, distance) && !judgeIfFull(depth, previousDistance)){
+                                System.out.println("如果已经清空且之前未满，需要更新预估数据，更新清空时间");
+                                int newEstimatedTime = getNewEstimatedTime(lastEmptyTime, date, estimatedTime);
+                                int newVariance = getnewVariance(lastEmptyTime, date, id, (depth-distance)/depth, db);
+                                Object[] obj1 = {distance, humidity, temperature, formatterDateTime.format(date), newEstimatedTime, newVariance, id};
+                                int result1 = db.update("UPDATE TrashCan SET Distance=?, Humidity=?, Temperature=?, LastEmptyTime=?, EstimatedTime=?, Variance=? WHERE Id=?", obj1);
+                            }
+                            // 如果已经满了且之前未满，需要更新预估数据
+                            else if( judgeIfFull(depth, distance) && !judgeIfFull(depth, previousDistance)){
+                                System.out.println("如果已经满了且之前未满，需要更新预估数据");
+                                int newEstimatedTime = getNewEstimatedTime(lastEmptyTime, date, estimatedTime);
+                                int newVariance = getnewVariance(lastEmptyTime, date, id, (depth-distance)/depth, db);
+                                Object[] obj1 = {distance, humidity, temperature, newEstimatedTime, newVariance, id};
+                                int result1 = db.update("UPDATE TrashCan SET Distance=?, Humidity=?, Temperature=?, EstimatedTime=?, Variance=? WHERE Id=?", obj1);
+                            }
+                            // 如果已经清空且之前已满，无需更新预估数据，更新清空时间
+                            else if(judgeIfEmptied(depth, previousDistance, distance) && judgeIfFull(depth, previousDistance)){
+                                System.out.println("如果已经清空且之前已满，无需更新预估数据，更新清空时间");
+                                Object[] obj1 = {distance, humidity, temperature, formatterDateTime.format(date), id};
+                                int result1 = db.update("UPDATE TrashCan SET Distance=?, Humidity=?, Temperature=?, LastEmptyTime=? WHERE Id=?", obj1);
+                            }
+                            // 其他情况：现在已满且之前就已满，和未满且未被清空
+                            else {
+                                //更新TrashCan表对应垃圾桶数据
+                                System.out.println("其他情况：现在已满且之前就已满，和未满且未被清空");
+                                Object[] obj1 = {distance, humidity, temperature, id};
+                                int result1 = db.update("UPDATE TrashCan SET Distance=?, Humidity=?, Temperature=? WHERE Id=?", obj1);
+                            }
+                        }
+                    }
+                    //插入record表对应垃圾桶数据
+                    Object[] obj2 = {distance, humidity, temperature, formatterDateTime.format(date), id};
+                    int result2 = db.update("insert into record(Distance,Humidity,Temperature,DateTime,TrashCanId) values(?,?,?,?,?)", obj2);
+                }
+            }
+            //接收到安卓客户端数据请求时
+            // {"dataType":"trashCanDataRequest","Id":"Android\/1","TrashCanId":1}
+            //TODO:后续可以考虑在子线程里完成以下操作
+            if(dataType!=null && dataType.equals("trashCanDataRequest")){
+                String id = null;
+                if(jsonObject.has("Id")){
+                    id = jsonObject.getString("Id");
+                }
+                int TrashCanId = -1;
+                if(jsonObject.has("TrashCanId")){
+                    TrashCanId = jsonObject.getInt("TrashCanId");
+                }
+                if(id!=null && TrashCanId>=0) {
+                    JSONObject thisTrashCanData = new JSONObject();
+                    JSONArray jsonArray = new JSONArray();
+
+                    Database db = new Database();
+                    Object[] obj0 = {TrashCanId};
+                    ResultSet set = db.select("select * from Record where TrashCanId = ?", obj0);
+                    if(set!=null){
+                        while (set.next()){
+                            JSONObject obj = new JSONObject();
+                            obj.put("Id", set.getInt("id"));
+                            obj.put("TrashCanId", set.getInt("TrashCanId"));
+                            obj.put("Distance", set.getInt("Distance"));
+                            obj.put("Humidity", set.getInt("Humidity"));
+                            obj.put("Temperature", set.getInt("Temperature"));
+                            obj.put("DateTime",(Date)set.getTimestamp("DateTime"));
+
+                            jsonArray.add(obj);
+                        }
+                    }
+                    thisTrashCanData.put("sender","myMqttClient");
+                    thisTrashCanData.put("dataType","thisTrashCanData");
+                    thisTrashCanData.put("TrashCanId",TrashCanId);
+                    thisTrashCanData.put("payload",jsonArray);
+
+                    MyMqttClient myMQTTClient = MyMqttClient.getInstance();
+                    myMQTTClient.publishMessage(id,thisTrashCanData.toString(),0);
                 }
             }
 
         }
     }
+
+    private boolean judgeIfFull(int depth, int distance){
+        float percentage = (float)(depth-distance)/(float) depth;
+        //垃圾桶已满
+        if(percentage > 0.9){
+            return true;
+        }
+        return false;
+    }
+
+    private boolean judgeIfEmptied(int depth, int previousDistance, int distance){
+        //判定为已被清空
+        if((depth-distance) < 10 && (depth-distance)+20 < (depth-previousDistance)){
+            return true;
+        }
+        return false;
+    }
+
+    private int getNewEstimatedTime(Date lastEmptyTime, Date date, int estimatedTime){
+        //计算时间差
+        long diff = date.getTime() - lastEmptyTime.getTime(); //毫秒单位
+        int hourDiff = (int)( diff / (1000 * 60 * 60) ); //小时单位
+        //计算预估时间
+        double alpha = 0.2;
+        int newEstimatedTime = (int)( alpha*hourDiff + (1-alpha)*estimatedTime );
+
+        return newEstimatedTime;
+    }
+
+    private int getnewVariance(Date lastEmptyTime, Date date, int id, double perc, Database db) throws SQLException {
+        int limitNum = 15; //timeConsume记录的条数
+        Object[] obj = {id,limitNum};
+        ResultSet timeSet = db.select("select * from Time where TrashCanId = ? ORDER BY id DESC LIMIT ?", obj);
+        List<Integer> timeConsumeList = new ArrayList<>();
+        if(timeSet!=null){
+            while (timeSet.next()){
+                timeConsumeList.add(timeSet.getInt("TimeConsume"));
+            }
+        }
+        //计算时间差
+        long diff = date.getTime() - lastEmptyTime.getTime(); //毫秒单位
+        int hourDiff = (int)( diff / (1000 * 60 * 60) ); //小时单位
+        //预估装满所需时间
+        hourDiff /= perc;
+
+        //在数据库time表种插入新的耗时记录
+        Object[] obj2 = {hourDiff, id};
+        int result2 = db.update("insert into time(TimeConsume,TrashCanId) values(?,?)", obj2);
+
+        //计算方差
+        timeConsumeList.add(hourDiff);
+//        for(int i:timeConsumeList){
+//            System.out.println(i);
+//        }
+        double sum = 0;
+        for(int i : timeConsumeList){
+            sum += i;
+        }
+        double ave = sum / timeConsumeList.size();
+        double v = 0;
+        for(int i : timeConsumeList){
+            if(i<=0){
+                v+=0;
+            }else {
+                v += Math.pow(i-ave, 2);
+            }
+        }
+        int newVariance = (int)v / timeConsumeList.size();
+
+        return newVariance;
+    }
+
 }
 
 
