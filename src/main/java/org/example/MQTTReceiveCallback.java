@@ -198,6 +198,43 @@ public class MQTTReceiveCallback implements MqttCallbackExtended {
                     myMQTTClient.publishMessage(id,thisTrashCanData.toString(),0);
                 }
             }
+            //接收到安卓客户端登录请求时
+            //TODO:后续可以考虑在子线程里完成以下操作
+            if(dataType!=null && dataType.equals("LoginRequest")){
+                //客户端id
+                String id = null;
+                if(jsonObject.has("Id")){
+                    id = jsonObject.getString("Id");
+                }
+                //UserName
+                String UserName = null;
+                if(jsonObject.has("UserName")){
+                    UserName = jsonObject.getString("UserName");
+                }
+                //Password
+                String Password = null;
+                if(jsonObject.has("Password")){
+                    Password = jsonObject.getString("Password");
+                }
+                if(id!=null && UserName!=null && Password!=null){
+                    Database db = new Database();
+                    Object[] obj0 = {UserName, Password};
+                    ResultSet set = db.select("select * from User where UserName = ? And Password = ?", obj0);
+
+                    JSONObject loginReplyData = new JSONObject();
+                    loginReplyData.put("sender","myMqttClient");
+                    loginReplyData.put("dataType","loginReplyData");
+                    if(set.next()){
+                        loginReplyData.put("result","succeeded");
+                        MyMqttClient myMQTTClient = MyMqttClient.getInstance();
+                        myMQTTClient.publishMessage(id,loginReplyData.toString(),0);
+                    }else {
+                        loginReplyData.put("result","failed");
+                        MyMqttClient myMQTTClient = MyMqttClient.getInstance();
+                        myMQTTClient.publishMessage(id,loginReplyData.toString(),0);
+                    }
+                }
+            }
 
         }
     }
