@@ -96,9 +96,14 @@ public class MQTTReceiveCallback implements MqttCallbackExtended {
                 }else {
                     temperature = -1;
                 }
+                String mode = null;
+                if(jsonObject.has("Mode")){
+                    mode = jsonObject.getString("Mode");
+                }else {
+                }
 
                 //写入数据库
-                if(distance>=0 && humidity>=0 && temperature>=0 && id>0){
+                if(distance>=0 && humidity>=0 && temperature>=0 && id>0 && mode!=null){
                     Database db = new Database();
 
                     //计算是否已满或者已被清空
@@ -120,35 +125,35 @@ public class MQTTReceiveCallback implements MqttCallbackExtended {
                                 System.out.println("如果已经清空且之前未满，需要更新预估数据，更新清空时间");
                                 int newEstimatedTime = getNewEstimatedTime(lastEmptyTime, date, estimatedTime);
                                 int newVariance = getnewVariance(lastEmptyTime, date, id, (depth-distance)/depth, db);
-                                Object[] obj1 = {distance, humidity, temperature, formatterDateTime.format(date), newEstimatedTime, newVariance, id};
-                                int result1 = db.update("UPDATE TrashCan SET Distance=?, Humidity=?, Temperature=?, LastEmptyTime=?, EstimatedTime=?, Variance=? WHERE Id=?", obj1);
+                                Object[] obj1 = {distance, humidity, temperature, formatterDateTime.format(date), newEstimatedTime, newVariance, mode, id};
+                                int result1 = db.update("UPDATE TrashCan SET Distance=?, Humidity=?, Temperature=?, LastEmptyTime=?, EstimatedTime=?, Variance=?, Mode=? WHERE Id=?", obj1);
                             }
                             // 如果已经满了且之前未满，需要更新预估数据
                             else if( judgeIfFull(depth, distance) && !judgeIfFull(depth, previousDistance)){
                                 System.out.println("如果已经满了且之前未满，需要更新预估数据");
                                 int newEstimatedTime = getNewEstimatedTime(lastEmptyTime, date, estimatedTime);
                                 int newVariance = getnewVariance(lastEmptyTime, date, id, (depth-distance)/depth, db);
-                                Object[] obj1 = {distance, humidity, temperature, newEstimatedTime, newVariance, id};
-                                int result1 = db.update("UPDATE TrashCan SET Distance=?, Humidity=?, Temperature=?, EstimatedTime=?, Variance=? WHERE Id=?", obj1);
+                                Object[] obj1 = {distance, humidity, temperature, newEstimatedTime, newVariance, mode, id};
+                                int result1 = db.update("UPDATE TrashCan SET Distance=?, Humidity=?, Temperature=?, EstimatedTime=?, Variance=?, Mode=? WHERE Id=?", obj1);
                             }
                             // 如果已经清空且之前已满，无需更新预估数据，更新清空时间
                             else if(judgeIfEmptied(depth, previousDistance, distance) && judgeIfFull(depth, previousDistance)){
                                 System.out.println("如果已经清空且之前已满，无需更新预估数据，更新清空时间");
-                                Object[] obj1 = {distance, humidity, temperature, formatterDateTime.format(date), id};
-                                int result1 = db.update("UPDATE TrashCan SET Distance=?, Humidity=?, Temperature=?, LastEmptyTime=? WHERE Id=?", obj1);
+                                Object[] obj1 = {distance, humidity, temperature, formatterDateTime.format(date), mode, id};
+                                int result1 = db.update("UPDATE TrashCan SET Distance=?, Humidity=?, Temperature=?, LastEmptyTime=?, Mode=? WHERE Id=?", obj1);
                             }
                             // 其他情况：现在已满且之前就已满，和未满且未被清空
                             else {
                                 //更新TrashCan表对应垃圾桶数据
                                 System.out.println("其他情况：现在已满且之前就已满，和未满且未被清空");
-                                Object[] obj1 = {distance, humidity, temperature, id};
-                                int result1 = db.update("UPDATE TrashCan SET Distance=?, Humidity=?, Temperature=? WHERE Id=?", obj1);
+                                Object[] obj1 = {distance, humidity, temperature, mode, id};
+                                int result1 = db.update("UPDATE TrashCan SET Distance=?, Humidity=?, Temperature=?, Mode=? WHERE Id=?", obj1);
                             }
                         }
                     }
                     //插入record表对应垃圾桶数据
-                    Object[] obj2 = {distance, humidity, temperature, formatterDateTime.format(date), id};
-                    int result2 = db.update("insert into record(Distance,Humidity,Temperature,DateTime,TrashCanId) values(?,?,?,?,?)", obj2);
+                    Object[] obj2 = {distance, humidity, temperature, formatterDateTime.format(date),mode, id};
+                    int result2 = db.update("insert into record(Distance,Humidity,Temperature,DateTime,Mode, TrashCanId) values(?,?,?,?,?,?)", obj2);
                 }
             }
             //接收到安卓客户端数据请求时
@@ -179,6 +184,7 @@ public class MQTTReceiveCallback implements MqttCallbackExtended {
                             obj.put("Humidity", set.getInt("Humidity"));
                             obj.put("Temperature", set.getInt("Temperature"));
                             obj.put("DateTime",(Date)set.getTimestamp("DateTime"));
+                            obj.put("Mode",set.getString("Mode"));
 
                             jsonArray.add(obj);
                         }
