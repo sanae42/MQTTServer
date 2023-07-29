@@ -235,6 +235,48 @@ public class MQTTReceiveCallback implements MqttCallbackExtended {
                     }
                 }
             }
+            //接收到安卓客户端注册请求时
+            //TODO:后续可以考虑在子线程里完成以下操作
+            if(dataType!=null && dataType.equals("RegisterRequest")){
+                //客户端id
+                String id = null;
+                if(jsonObject.has("Id")){
+                    id = jsonObject.getString("Id");
+                }
+                //UserName
+                String UserName = null;
+                if(jsonObject.has("UserName")){
+                    UserName = jsonObject.getString("UserName");
+                }
+                //Password
+                String Password = null;
+                if(jsonObject.has("Password")){
+                    Password = jsonObject.getString("Password");
+                }
+                if(id!=null && UserName!=null && Password!=null){
+                    Database db = new Database();
+                    Object[] obj0 = {UserName};
+                    ResultSet set = db.select("select * from User where UserName = ?", obj0);
+
+                    JSONObject registerReplyData = new JSONObject();
+                    registerReplyData.put("sender","myMqttClient");
+                    if(!set.next()){
+                        //set为空时
+                        Object[] obj2 = {UserName, Password};
+                        int result2 = db.update("insert into user(UserName, Password) values(?,?)", obj2);
+
+                        registerReplyData.put("dataType","registerReplyData");
+                        registerReplyData.put("result","succeeded");
+                        MyMqttClient myMQTTClient = MyMqttClient.getInstance();
+                        myMQTTClient.publishMessage(id,registerReplyData.toString(),0);
+                    }else {
+                        registerReplyData.put("dataType","registerReplyData");
+                        registerReplyData.put("result","failed");
+                        MyMqttClient myMQTTClient = MyMqttClient.getInstance();
+                        myMQTTClient.publishMessage(id,registerReplyData.toString(),0);
+                    }
+                }
+            }
 
         }
     }
