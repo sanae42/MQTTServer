@@ -281,6 +281,7 @@ public class MQTTReceiveCallback implements MqttCallbackExtended {
         }
     }
 
+
     private boolean judgeIfFull(int depth, int distance){
         float percentage = (float)(depth-distance)/(float) depth;
         //垃圾桶已满
