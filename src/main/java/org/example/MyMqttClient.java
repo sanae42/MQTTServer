@@ -36,9 +36,11 @@ public class MyMqttClient {
 
     //获得对象的静态方法
     public static MyMqttClient getInstance() {
+        //
         if (mInstance == null) {
-            //https://blog.csdn.net/cgsyck/article/details/106251614
+            //https://blog.csdn.net/beita08/article/details/83279865
             synchronized (MyMqttClient.class) {//同步锁
+                //
                 if (mInstance == null) {
                     mInstance = new MyMqttClient();
                 }
@@ -56,7 +58,7 @@ public class MyMqttClient {
         //设置连接超时时间，单位是秒
         mqttConnectOptions.setConnectionTimeout(10);
         //自动重连
-//        mqttConnectOptions.setAutomaticReconnect(true);
+    //        mqttConnectOptions.setAutomaticReconnect(true);
         // 设置超时时间 单位为秒
         mqttConnectOptions.setConnectionTimeout(10);
         // 设置会话心跳时间 单位为秒 服务器会每隔1.5*20秒的时间向客户端发送个消息判断客户端是否在线，但这个方法并没有重连的机制

@@ -217,6 +217,7 @@ class RunnableHandleMessage implements Runnable {
                 try {
                     if(set.next()){
                         loginReplyData.put("result","succeeded");
+                        loginReplyData.put("UserName",UserName);
                         MyMqttClient myMQTTClient = MyMqttClient.getInstance();
                         myMQTTClient.publishMessage(id,loginReplyData.toString(),0);
                     }else {
@@ -259,7 +260,7 @@ class RunnableHandleMessage implements Runnable {
                         //set为空时
                         Object[] obj2 = {UserName, Password};
                         int result2 = db.update("insert into user(UserName, Password) values(?,?)", obj2);
-
+                        registerReplyData.put("UserName",UserName);
                         registerReplyData.put("dataType","registerReplyData");
                         registerReplyData.put("result","succeeded");
                         MyMqttClient myMQTTClient = MyMqttClient.getInstance();
@@ -275,7 +276,93 @@ class RunnableHandleMessage implements Runnable {
                 }
             }
         }
+        //接收到安卓客户端修改用户名请求时
+        //TODO:后续可以考虑在子线程里完成以下操作
+        if(dataType!=null && dataType.equals("EditUserNameRequest")){
+            //客户端id
+            String id = null;
+            if(jsonObject.has("Id")){
+                id = jsonObject.getString("Id");
+            }
+            //UserName
+            String UserName = null;
+            if(jsonObject.has("UserName")){
+                UserName = jsonObject.getString("UserName");
+            }
+            //newUserName
+            String newUserName = null;
+            if(jsonObject.has("newUserName")){
+                newUserName = jsonObject.getString("newUserName");
+            }
+            if(id!=null && UserName!=null && newUserName!=null){
+                Database db = new Database();
+                Object[] obj0 = {UserName};
+                ResultSet set = db.select("select * from User where UserName = ?", obj0);
 
+                JSONObject registerReplyData = new JSONObject();
+                registerReplyData.put("sender","myMqttClient");
+                registerReplyData.put("dataType","editUserNameReplyData");
+                try {
+                    if(set.next()){
+                        Object[] obj2 = {newUserName, UserName};
+                        int result2 = db.update("update user set UserName = ? where UserName = ?", obj2);
+                        registerReplyData.put("UserName",newUserName);
+                        registerReplyData.put("result","succeeded");
+                        MyMqttClient myMQTTClient = MyMqttClient.getInstance();
+                        myMQTTClient.publishMessage(id,registerReplyData.toString(),0);
+                    }else {
+                        registerReplyData.put("result","failed");
+                        MyMqttClient myMQTTClient = MyMqttClient.getInstance();
+                        myMQTTClient.publishMessage(id,registerReplyData.toString(),0);
+                    }
+                } catch (SQLException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }
+        //接收到安卓客户端修改密码请求时
+        //TODO:后续可以考虑在子线程里完成以下操作
+        if(dataType!=null && dataType.equals("EditPasswordRequest")){
+            //客户端id
+            String id = null;
+            if(jsonObject.has("Id")){
+                id = jsonObject.getString("Id");
+            }
+            //UserName
+            String UserName = null;
+            if(jsonObject.has("UserName")){
+                UserName = jsonObject.getString("UserName");
+            }
+            //newUserName
+            String Password = null;
+            if(jsonObject.has("Password")){
+                Password = jsonObject.getString("Password");
+            }
+            if(id!=null && UserName!=null && Password!=null){
+                Database db = new Database();
+                Object[] obj0 = {UserName};
+                ResultSet set = db.select("select * from User where UserName = ?", obj0);
+
+                JSONObject registerReplyData = new JSONObject();
+                registerReplyData.put("sender","myMqttClient");
+                registerReplyData.put("dataType","editPasswordReplyData");
+                try {
+                    if(set.next()){
+                        Object[] obj2 = {Password, UserName};
+                        int result2 = db.update("update user set Password = ? where UserName = ?", obj2);
+                        registerReplyData.put("result","succeeded");
+                        MyMqttClient myMQTTClient = MyMqttClient.getInstance();
+                        myMQTTClient.publishMessage(id,registerReplyData.toString(),0);
+                    }else {
+                        registerReplyData.put("result","failed");
+                        MyMqttClient myMQTTClient = MyMqttClient.getInstance();
+                        myMQTTClient.publishMessage(id,registerReplyData.toString(),0);
+                    }
+                } catch (SQLException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }
 
     }
 
