@@ -4,18 +4,18 @@ public class Main {
     private static MyMqttClient myMQTTClient;
     public static void main(String[] args) {
         myMQTTClient = MyMqttClient.getInstance();
-        //初始化连接
+        //initialize connection
         myMQTTClient.start();
-        //订阅/World这个主题
+        //subscribe topics
         myMQTTClient.subTopic("TrashCanPub");
         myMQTTClient.subTopic("MQTTServerSub");
-        myMQTTClient.publishMessage("testtopic/1","java客户端连接测试",0);
+        myMQTTClient.publishMessage("testtopic/1","java client connection test",0);
 
-        //开启线程定时执行
+        //start a thread to sned messages regularly
         RunnableScheduled R1 = new RunnableScheduled( "Thread-1");
         R1.start();
 
-        //测试数据库
+        //test database
 //        Database db = new Database();
 //        Object[] obj = {2, 9, 40, 25};
 //        int i = db.update("insert into TrashCan values(?,?,?,?)", obj);

@@ -97,7 +97,7 @@ class RunnableHandleMessage implements Runnable {
 
                         // 如果已经清空且之前未满，需要更新预估数据，更新清空时间
                         if( judgeIfEmptied(depth, previousDistance, distance) && !judgeIfFull(depth, previousDistance)){
-                            System.out.println("如果已经清空且之前未满，需要更新预估数据，更新清空时间");
+//                            System.out.println("如果已经清空且之前未满，需要更新预估数据，更新清空时间");
                             int newEstimatedTime = getNewEstimatedTime(lastEmptyTime, date, estimatedTime);
                             int newVariance = 0;
                             try {
@@ -110,7 +110,7 @@ class RunnableHandleMessage implements Runnable {
                         }
                         // 如果已经满了且之前未满，需要更新预估数据
                         else if( judgeIfFull(depth, distance) && !judgeIfFull(depth, previousDistance)){
-                            System.out.println("如果已经满了且之前未满，需要更新预估数据");
+//                            System.out.println("如果已经满了且之前未满，需要更新预估数据");
                             int newEstimatedTime = getNewEstimatedTime(lastEmptyTime, date, estimatedTime);
                             int newVariance = 0;
                             try {
@@ -123,14 +123,14 @@ class RunnableHandleMessage implements Runnable {
                         }
                         // 如果已经清空且之前已满，无需更新预估数据，更新清空时间
                         else if(judgeIfEmptied(depth, previousDistance, distance) && judgeIfFull(depth, previousDistance)){
-                            System.out.println("如果已经清空且之前已满，无需更新预估数据，更新清空时间");
+//                            System.out.println("如果已经清空且之前已满，无需更新预估数据，更新清空时间");
                             Object[] obj1 = {distance, humidity, temperature, formatterDateTime.format(date), mode, id};
                             int result1 = db.update("UPDATE TrashCan SET Distance=?, Humidity=?, Temperature=?, LastEmptyTime=?, Mode=? WHERE Id=?", obj1);
                         }
                         // 其他情况：现在已满且之前就已满，和未满且未被清空
                         else {
                             //更新TrashCan表对应垃圾桶数据
-                            System.out.println("其他情况：现在已满且之前就已满，和未满且未被清空");
+//                            System.out.println("其他情况：现在已满且之前就已满，和未满且未被清空");
                             Object[] obj1 = {distance, humidity, temperature, mode, id};
                             int result1 = db.update("UPDATE TrashCan SET Distance=?, Humidity=?, Temperature=?, Mode=? WHERE Id=?", obj1);
                         }

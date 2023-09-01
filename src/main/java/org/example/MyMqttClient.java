@@ -138,10 +138,10 @@ public class MyMqttClient {
                 try {
                     MqttDeliveryToken publish = topic.publish(mqttMessage);
                     if(!publish.isComplete()) {
-                        System.out.print("消息发布成功:");
-                        System.out.print("   主题:"+pubTopic);
+                        System.out.print("Sent a message:");
+                        System.out.print("   topic:"+pubTopic);
                         System.out.print("   qos:"+qos);
-                        System.out.println("   内容:"+message);
+                        System.out.println("   content:"+message);
                     }
                 } catch (MqttException e) {
                     e.printStackTrace();

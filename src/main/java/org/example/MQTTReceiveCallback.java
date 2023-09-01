@@ -43,9 +43,10 @@ public class MQTTReceiveCallback implements MqttCallbackExtended {
     @Override
     public void messageArrived(String topic, MqttMessage message) throws Exception {
         // subscribe后得到的消息会执行到这里面
-        System.out.print("接收消息主题 : " + topic);
-        System.out.print("   接收消息Qos : " + message.getQos());
-        System.out.println("   接收消息内容 : " + new String(message.getPayload()));
+        System.out.print("Received a message:   ");
+        System.out.print("topic : " + topic);
+        System.out.print("   qos : " + message.getQos());
+        System.out.println("   content : " + new String(message.getPayload()));
 
 //        TimeUnit.SECONDS.sleep(5);
 //        System.out.println("再次确认收到接收消息主题 : " + topic+" "+new String(message.getPayload()));
