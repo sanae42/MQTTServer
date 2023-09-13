@@ -9,22 +9,25 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+/**
+ * @Title：RunnableScheduled.java
+ * @Description: A thread that regularly sends all trash can data to all mobile applications;
+ * And regularly check the full trash cans and send them information on nearby available trash cans
+ * @author P Geng
+ */
 class RunnableScheduled implements Runnable {
     private Thread t;
     private String threadName;
 
     RunnableScheduled(String name) {
         threadName = name;
-//            System.out.println("Creating " +  threadName );
     }
 
     public void run() {
-//            System.out.println("Running " +  threadName );
         try {
-            // 定时发送消息测试
-//            int count = 0;
+
             while(true){
-                //全部垃圾桶状态数据
+                //All trash can status data
                 JSONObject allTrashCanData = new JSONObject();
                 JSONArray jsonArray = new JSONArray();
 
@@ -34,7 +37,7 @@ class RunnableScheduled implements Runnable {
                 ResultSet set = db.select("select * from TrashCan", objs);
                 try {
                     while (set.next()) {
-                        //将一条记录的数据存入jsonObject
+                        //Store the data of a record in the table into jsonObject
                         JSONObject jsonObject = new JSONObject();
                         jsonObject.put("Id", set.getInt("Id"));
                         jsonObject.put("Distance", set.getInt("Distance"));
@@ -50,10 +53,10 @@ class RunnableScheduled implements Runnable {
 
                         jsonObject.put("LocationDescription",set.getString("LocationDescription"));
                         jsonObject.put("Mode",set.getString("Mode"));
-                        //将jsonObject插入jsonArray
+                        //Insert jsonObject into jsonArray
                         jsonArray.add(jsonObject);
 
-                        //将一条记录的数据存入bean
+                        //Saving data from a record into a bean
                         TrashCanBean bean = new TrashCanBean();
                         bean.setId(set.getInt("Id"));
                         bean.setDistance(set.getInt("Distance"));
@@ -83,7 +86,7 @@ class RunnableScheduled implements Runnable {
                     e.printStackTrace();
                 }
 
-                // 检测垃圾桶是否已满，如果是，则发送附件垃圾桶位置信息到该垃圾桶
+                // Check if the trash can is full, and if so, send the attached trash can location information to the trash can
                 try{
                     for(TrashCanBean bean0 : trashCanBeanList){
                         double percentage0 = (double)(bean0.getDepth() - bean0.getDistance()) / (double)bean0.getDepth();
@@ -95,12 +98,7 @@ class RunnableScheduled implements Runnable {
                                     nearestTrashCan = bean1;
                                 }
                             }
-//                            JSONObject nearestTrashCanData = new JSONObject();
-                            //发给arduino的数据不宜太长，由于Arduino库冲突导致解析JSON失败，故发送字符串，Arduino通过消息长度判断消息类型
-//                            nearestTrashCanData.put("sender","myMqttClient");
-//                            nearestTrashCanData.put("dataType","nearestTrashCanData");
-//                            nearestTrashCanData.put("payload",nearestTrashCan.getLocationDescription());
-
+                            //The data sent to Arduino should not be too long. Due to Arduino library conflicts, parsing JSON failed, so a string was sent. Arduino determines the message type based on the message length
                             MyMqttClient myMQTTClient = MyMqttClient.getInstance();
                             myMQTTClient.publishMessage("TrashCanSub/"+bean0.getId(),nearestTrashCan.getLocationDescription(),0);
                         }
@@ -109,10 +107,7 @@ class RunnableScheduled implements Runnable {
                 }catch (Exception e) {
                     e.printStackTrace();
                 }
-//
-//
-//                MyMqttClient myMQTTClient = MyMqttClient.getInstance();
-//                myMQTTClient.publishMessage("testtopic/1","服务端定时发送数据"+count++,0);
+
                 Thread.sleep(5000);
             }
         }catch (InterruptedException e) {
@@ -122,13 +117,15 @@ class RunnableScheduled implements Runnable {
     }
 
     public void start () {
-//            System.out.println("Starting " +  threadName );
         if (t == null) {
             t = new Thread (this, threadName);
             t.start ();
         }
     }
 
+    /**
+     * This method obtains the distance between two coordinates
+     */
     private double getGap(TrashCanBean bean1, TrashCanBean bean2){
         double d1 = bean1.getLatitude() - bean2.getLatitude();
         double d2 = bean1.getLongitude() - bean2.getLongitude();

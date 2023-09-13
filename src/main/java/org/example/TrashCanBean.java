@@ -1,7 +1,11 @@
 package org.example;
 
 import java.util.Date;
-
+/**
+ * @Title：TrashCanBean.java
+ * @Description: A class that stores trash can data.
+ * @author P Geng
+ */
 public class TrashCanBean {
     private int Id;
     private int Distance;

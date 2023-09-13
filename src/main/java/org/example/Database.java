@@ -4,45 +4,52 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.sql.*;
 import java.util.Properties;
+
+/**
+ * @Title：Database.java
+ * @Description: A Java class related to database operations such as adding, deleting, modifying, and querying
+ * @author PerCheung https://blog.csdn.net/weixin_43982359/article/details/119854500
+ */
 public class Database {
-    //连接信息
-    //后续可改为从文件中读取
+    //Database connect information
     private static String driverName = "com.mysql.cj.jdbc.Driver";
     private static String url = "jdbc:mysql://localhost:3306/IoT?useUnicode=true&characterEncoding=utf8&useSSL=true";
     private static String username = "root";
     private static String password = "GPF200017";
-    //jdbc对象
+    //jdbc object
     private Connection connection = null;
-    private PreparedStatement preparedStatement = null; //执行SQL的对象
+    private PreparedStatement preparedStatement = null;
     private ResultSet resultSet = null;
 
-    //获取连接
+    /**
+     * Connect to the database
+     */
     public void getConnection() {
         try {
-            //加载驱动
             Class.forName(driverName);
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
         }
         try {
-            //建立连接
             connection = DriverManager.getConnection(url, username, password);
         } catch (SQLException e) {
             e.printStackTrace();
         }
     }
 
-    //更新操作：增删改
+    /**
+     * Update operation: add, delete, and modify
+     */
     public int update(String sql, Object[] objs) {
         int i = 0;
         try {
             getConnection();
-            //创建sql对象
+            //Create SQL object
             preparedStatement = connection.prepareStatement(sql);
             for (int j = 0; j < objs.length; j++) {
                 preparedStatement.setObject(j + 1, objs[j]);
             }
-            //执行sql，返回改变的行数
+            //Execute SQL and return the number of changed rows
             i = preparedStatement.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
@@ -50,16 +57,18 @@ public class Database {
         return i;
     }
 
-    //查询操作
+    /**
+     * query operation
+     */
     public ResultSet select(String sql, Object[] objs) {
         try {
             getConnection();
-            //创建sql对象
+            //Create SQL object
             preparedStatement = connection.prepareStatement(sql);
             for (int j = 0; j < objs.length; j++) {
                 preparedStatement.setObject(j + 1, objs[j]);
             }
-            //执行sql，返回查询到的set集合
+            //Execute SQL to return the set found in the query
             resultSet = preparedStatement.executeQuery();
         } catch (SQLException e) {
             e.printStackTrace();
@@ -67,7 +76,9 @@ public class Database {
         return resultSet;
     }
 
-    //断开连接
+    /**
+     * close connection
+     */
     public void closeConnection() {
         if (resultSet != null) {
             try {
